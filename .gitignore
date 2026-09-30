@@ -1,0 +1,25 @@
+# Secrets and personal config — never commit
+settings.json
+settings.json.tmp
+credentials.json
+token.json
+.env
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Your data
+products.db
+products.db-*
+products.db.bak*
+photos/
+incoming/
+output/
+new ebay photos/
+_legacy/
+
+# Python / OS
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
