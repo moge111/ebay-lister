@@ -71,7 +71,7 @@ def api_state():
     return jsonify({
         "counts": counts,
         "ai_backend": ai.backend(),
-        "ebay": {"app_keys": ebay.has_app_keys(), "connected": ebay.is_connected()},
+        "ebay": {"app_keys": ebay.has_app_keys(), "connected": ebay.is_connected(), "can_promote": ebay.can_promote()},
         "comps": comps.token_status(),
         "jobs": [j for j in jobs.recent(5) if j["status"] == "running"],
         "categories": [{"key": k, "id": cid, "name": name} for k, (cid, name, _) in catalog.CATEGORIES.items()],
@@ -528,7 +528,7 @@ def api_settings():
 @app.route("/api/settings", methods=["POST"])
 def api_save_settings():
     body = request.json or {}
-    allowed = set(config.DEFAULT_SETTINGS) - {"ebay_refresh_token", "ebay_user_token", "ebay_user_token_expires_at",
+    allowed = set(config.DEFAULT_SETTINGS) - {"ebay_refresh_token", "ebay_user_token", "ebay_user_token_expires_at", "ebay_scopes",
                                               "ebay_refresh_expires_at", "ebay_location_key"}
     changes = {k: v for k, v in body.items() if k in allowed and not (k in settings.SECRET_KEYS and v in ("", True, None))}
     changes = {k: v.strip() if isinstance(v, str) else v for k, v in changes.items()}

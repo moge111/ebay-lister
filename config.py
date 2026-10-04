@@ -53,7 +53,7 @@ DEFAULT_SETTINGS = {
     "csv_payment_profile": "",
     "csv_return_profile": "",
     "csv_shipping_profiles": {"card": "", "small": "", "medium": "", "large": ""},
-    "csv_ad_rate": "",  # Promoted Listings Standard %, blank = not promoted
+    "promoted_ad_rate": "",  # Promoted Listings Standard % for every new listing, blank = off
     "ebay_app_id": "",
     "ebay_cert_id": "",
     "ebay_ru_name": "",

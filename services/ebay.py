@@ -23,10 +23,12 @@ MARKETPLACE = "EBAY_US"
 CATEGORY_TREE = "0"  # EBAY_US
 CACHE_TTL = 7 * 24 * 3600
 
+MARKETING_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.marketing"
 USER_SCOPES = [
     "https://api.ebay.com/oauth/api_scope",
     "https://api.ebay.com/oauth/api_scope/sell.inventory",
     "https://api.ebay.com/oauth/api_scope/sell.account",
+    MARKETING_SCOPE,
 ]
 
 # Numeric condition id -> Inventory API enum.
@@ -114,7 +116,17 @@ def exchange_code(code_or_url):
         ebay_refresh_expires_at=int(time.time() + body.get("refresh_token_expires_in", 0)),
         ebay_user_token=body["access_token"],
         ebay_user_token_expires_at=int(time.time() + body["expires_in"]),
+        ebay_scopes=USER_SCOPES,
     )
+
+
+def granted_scopes():
+    # Connections made before Promoted Listings support didn't grant sell.marketing.
+    return settings.get("ebay_scopes") or [sc for sc in USER_SCOPES if sc != MARKETING_SCOPE]
+
+
+def can_promote():
+    return is_connected() and MARKETING_SCOPE in granted_scopes()
 
 
 def user_token():
@@ -123,7 +135,7 @@ def user_token():
     if settings.get("ebay_user_token_expires_at") - 60 > time.time():
         return settings.get("ebay_user_token")
     body = _token_request({"grant_type": "refresh_token", "refresh_token": settings.get("ebay_refresh_token"),
-                           "scope": " ".join(USER_SCOPES)})
+                           "scope": " ".join(granted_scopes())})
     settings.update(ebay_user_token=body["access_token"],
                     ebay_user_token_expires_at=int(time.time() + body["expires_in"]))
     return body["access_token"]
@@ -295,3 +307,45 @@ def publish_offer(offer_id):
 
 def withdraw_offer(offer_id):
     _call("POST", f"/sell/inventory/v1/offer/{offer_id}/withdraw", user_token(), body={})
+
+
+# ------------------------------------------------------------------ promoted listings
+
+_campaign_lock = threading.Lock()
+
+
+def ensure_campaign(rate):
+    """A running Promoted Listings Standard (cost-per-sale) campaign at `rate`%."""
+    if not can_promote():
+        raise NotConfigured("Reconnect eBay in Settings to allow Promoted Listings")
+    name = f"Lister Standard {float(rate):g}%"
+    tok = user_token()
+    with _campaign_lock:
+        found = _call("GET", "/sell/marketing/v1/ad_campaign/get_campaign_by_name", tok,
+                      params={"campaign_name": name}, ok=(200, 404))
+        if found.get("campaignId") and found.get("campaignStatus") in ("RUNNING", "SCHEDULED"):
+            return found["campaignId"]
+        _call("POST", "/sell/marketing/v1/ad_campaign", tok, body={
+            "campaignName": name,
+            "marketplaceId": MARKETPLACE,
+            "startDate": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 60)),
+            "fundingStrategy": {"fundingModel": "COST_PER_SALE", "bidPercentage": f"{float(rate):.1f}"},
+        })
+        return _call("GET", "/sell/marketing/v1/ad_campaign/get_campaign_by_name", tok,
+                     params={"campaign_name": name})["campaignId"]
+
+
+def promote(listing_ids, rate):
+    """Add listings to the campaign. Returns {listing_id: "ok" | error text}."""
+    campaign = ensure_campaign(rate)
+    out = {}
+    for i in range(0, len(listing_ids), 500):
+        chunk = [str(x) for x in listing_ids[i:i + 500]]
+        resp = _call("POST", f"/sell/marketing/v1/ad_campaign/{campaign}/bulk_create_ads_by_listing_id",
+                     user_token(), body={"requests": [{"listingId": x, "bidPercentage": f"{float(rate):.1f}"} for x in chunk]},
+                     ok=(200, 201, 207))
+        for r in resp.get("responses", []):
+            errs = r.get("errors") or []
+            out[str(r.get("listingId"))] = "ok" if r.get("statusCode") in (200, 201) and not errs else \
+                "; ".join(e.get("longMessage") or e.get("message", "") for e in errs) or f"HTTP {r.get('statusCode')}"
+    return out

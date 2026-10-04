@@ -463,6 +463,11 @@ def publish_item(item_id):
     else:
         listing_id = ebay.publish_offer(offer_id)
         fields.update(ebay_listing_id=listing_id, status="listed", listed_at=now())
+        rate = s.get("promoted_ad_rate")
+        if rate and ebay.can_promote():
+            result = ebay.promote([listing_id], rate).get(str(listing_id), "ok")
+            if result != "ok":  # listing is live either way; just surface the ad problem
+                fields["publish_error"] = f"Listed, but Promoted Listings failed: {result}"
     conn = get_db()
     update_item(conn, item_id, fields)
     conn.close()

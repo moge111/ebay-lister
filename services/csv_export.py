@@ -61,7 +61,7 @@ def export(item_ids, action="Add", mark_exported=True):
                 desc.get("40001", ""), full_description(item).replace("\n", "<br>"), "FixedPrice",
                 *[aspects.get(n, "") for n in aspect_names],
                 (s.get("csv_shipping_profiles") or {}).get(shipping_package(item), ""),
-                s.get("csv_return_profile", ""), s.get("csv_payment_profile", ""), s.get("csv_ad_rate", ""), 1, "GTC",
+                s.get("csv_return_profile", ""), s.get("csv_payment_profile", ""), s.get("promoted_ad_rate", ""), 1, "GTC",
                 f"{s.get('seller_city', '')}, {s.get('seller_state', '')}".strip(", "), s.get("seller_postal_code", ""),
             ])
 
