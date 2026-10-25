@@ -560,7 +560,7 @@ function Settings({ query }) {
           ${s.ebay_refresh_token ? html`<button class="ghost danger" onClick=${async () => { await api("POST", "/api/ebay/disconnect"); setS({ ...s, ebay_refresh_token: false }); app.refresh(); }}>Disconnect</button>`
             : html`<a class=${"btn" + (s.ebay_app_id && s.ebay_cert_id && s.ebay_ru_name ? "" : " hidden")} href="/api/ebay/connect" style="background:var(--accent);color:#fff;border-color:var(--accent)">Connect eBay account →</a>`}
         </div>
-        ${!s.ebay_refresh_token && s.ebay_app_id ? html`<div class="row">
+        ${s.ebay_app_id ? html`<div class="row">
           <input placeholder="After Connect, paste the full URL you land on (it contains ?code=…)" value=${code} onInput=${(e) => setCode(e.target.value)} />
           <button disabled=${!code} onClick=${async () => {
             try { await api("POST", "/api/ebay/code", { code }); app.toast("eBay connected"); setCode(""); setS({ ...s, ebay_refresh_token: true }); app.refresh(); }
@@ -585,6 +585,11 @@ function Settings({ query }) {
                   <select value=${fp[k] || ""} onChange=${(e) => set("ebay_fulfillment_policies", { ...fp, [k]: e.target.value })}>
                     <option value="">Choose…</option>${policies.fulfillment.map((p) => html`<option value=${p.id}>${p.name}</option>`)}</select></label>`)}
             </div>
+            <div class="field-row">
+              <label class="field"><span class="lbl">Promoted Listings ad rate % <span class="faint">blank = off</span></span>
+                <input type="number" step="0.1" min="0" max="100" value=${val("promoted_ad_rate")} onInput=${(e) => set("promoted_ad_rate", e.target.value)} placeholder="e.g. 2" /></label>
+            </div>
+            ${val("promoted_ad_rate") && !app.state?.ebay?.can_promote ? html`<div class="note warn">Your eBay connection predates Promoted Listings support. <a href="/api/ebay/connect">Reconnect eBay</a> (then paste the URL below) to allow ads.</div>` : null}
             <div class="row">
               <label class="row" style="font-weight:550"><input type="checkbox" checked=${val("best_offer")} onChange=${(e) => set("best_offer", e.target.checked)} /> Accept Best Offers</label>
               <div class="spacer"></div>
@@ -645,7 +650,6 @@ function Settings({ query }) {
                   <label class="field"><span class="lbl">Shipping: ${label}</span>
                     <input value=${(val("csv_shipping_profiles") || {})[k] || ""} onInput=${(e) => set("csv_shipping_profiles", { ...(val("csv_shipping_profiles") || {}), [k]: e.target.value })} /></label>`)}
               </div>
-              <label class="field"><span class="lbl">Promoted Listings ad rate % (blank = off)</span><input value=${val("csv_ad_rate")} onInput=${(e) => set("csv_ad_rate", e.target.value)} /></label>
             </div>
           </details>
           <div class="row"><div class="spacer"></div><button class="primary" onClick=${() => save()} disabled=${!Object.keys(form).length}>Save</button></div>

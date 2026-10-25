@@ -1,11 +1,12 @@
 """Sold-comps pricing via eBay's mobile-app search API (OPTIONAL, UNOFFICIAL).
 
 eBay's official APIs don't expose sold prices to regular developers, so this
-reads the same search endpoint the eBay Android app uses. It needs a JSON file
-at EBAY_MOBILE_AUTH (default ~/.ebay_mobile_auth.json) with the app session's
-`iaf_token`, `fp4pp` and `iaf_expires_at` (epoch seconds). Without it, pricing
-is simply skipped and you price items by hand. Using it may be against eBay's
-terms — your call.
+reads the same search endpoint the eBay Android app uses. With eBay app keys in
+Settings it authenticates with your own application token (client credentials,
+auto-renewed). Without keys it falls back to a captured mobile session at
+EBAY_MOBILE_AUTH (default ~/.ebay_mobile_auth.json: `iaf_token`, `fp4pp`,
+`iaf_expires_at`). With neither, pricing is skipped and you price by hand.
+Using it may be against eBay's terms — your call.
 """
 import json
 import os
@@ -14,6 +15,8 @@ import statistics
 import time
 
 import requests
+
+from services import ebay
 
 AUTH_FILE = os.path.expanduser(os.environ.get("EBAY_MOBILE_AUTH", "~/.ebay_mobile_auth.json"))
 SEARCH_URL = "https://apisd.ebay.com/experience/search/v1/search_results"
@@ -32,6 +35,8 @@ class CompsUnavailable(RuntimeError):
 
 
 def token_status():
+    if ebay.has_app_keys():
+        return {"ok": True, "message": "Using your eBay app keys"}
     if not os.path.exists(AUTH_FILE):
         return {"ok": False, "message": f"{AUTH_FILE} not found"}
     with open(AUTH_FILE) as f:
@@ -44,23 +49,34 @@ def token_status():
 
 
 def _headers(creds):
-    return {
+    headers = {
         "Authorization": f"Bearer {creds['iaf_token']}",
         "Accept": "application/json",
         "Accept-Language": "en-US",
         "User-Agent": creds.get("captured_user_agent") or "eBayAndroid/6.254.0.2",
         "x-ebay-c-marketplace-id": "EBAY-US",
-        "x-ebay-4pp": creds["fp4pp"],
         "x-ebay-c-cultural-pref": "Units=<US>,Currency=USD,Timezone=America%2FDenver",
     }
+    if creds.get("fp4pp"):
+        headers["x-ebay-4pp"] = creds["fp4pp"]
+    return headers
+
+
+def _creds():
+    if ebay.has_app_keys():
+        try:
+            return {"iaf_token": ebay.app_token()}
+        except ebay.EbayError as e:
+            raise CompsUnavailable(f"eBay app token failed: {e}") from e
+    if not os.path.exists(AUTH_FILE):
+        raise CompsUnavailable("no sold-comps source set up (add eBay app keys in Settings) — price by hand")
+    with open(AUTH_FILE) as f:
+        return json.load(f)
 
 
 def search_sold(query, is_card=False, limit=40):
     """Recently sold listings for a query -> [{title, price}], lots filtered."""
-    if not os.path.exists(AUTH_FILE):
-        raise CompsUnavailable("no sold-comps token set up (optional) — price by hand")
-    with open(AUTH_FILE) as f:
-        creds = json.load(f)
+    creds = _creds()
     params = {
         "_nkw": query, "_sop": "13", "LH_Sold": "1", "LH_Complete": "1",
         "_pgn": "1", "_ipg": "60", "answersVersion": "1",

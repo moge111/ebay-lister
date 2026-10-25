@@ -12,7 +12,7 @@ Flask JSON API + single-page UI (Preact + htm, vendored in `static/vendor/`, no 
    - **Seller city / state / ZIP**: required to publish.
    - **eBay**: Production App ID + Cert ID + RuName, then Connect (OAuth; the accepted URL can be any https page — the user pastes back the `?code=` URL). Settings rejects Sandbox (`SBX`) keys. Then pick business policies: payment, return, and one shipping policy per package size.
    - Without eBay keys the app works in **CSV mode** (File Exchange). Fill "CSV export settings" with the user's policy *names*.
-4. Optional sold comps: see README (`services/comps.py`, unofficial mobile API, token file). Without it pricing is skipped.
+4. Sold comps (`services/comps.py`, unofficial mobile search API) work automatically once eBay app keys are set; otherwise they need a token file (see README). Without either, pricing is skipped.
 
 ## Flow
 

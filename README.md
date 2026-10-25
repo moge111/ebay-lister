@@ -46,13 +46,13 @@ Point Claude Code (or any coding agent) at this repo and say *"set this up for m
 
 ## Sold-comps pricing (optional, unofficial)
 
-eBay's official APIs don't give regular developers sold prices. `services/comps.py` reads the eBay Android app's search endpoint using an app session token stored at `~/.ebay_mobile_auth.json` (override with `EBAY_MOBILE_AUTH`):
+eBay's official APIs don't give regular developers sold prices. `services/comps.py` reads the eBay Android app's search endpoint. Once your eBay App ID + Cert ID are in Settings it authenticates with your own application token, so there's nothing else to set up. Without app keys it falls back to a captured app session token at `~/.ebay_mobile_auth.json` (override with `EBAY_MOBILE_AUTH`):
 
 ```json
 {"iaf_token": "...", "fp4pp": "...", "iaf_expires_at": 1790000000}
 ```
 
-Capturing that token is up to you, and using it may be against eBay's terms. Without it, everything else works and you set prices yourself.
+Using this endpoint may be against eBay's terms. Without either, everything else works and you set prices yourself.
 
 ## Data & privacy
 
