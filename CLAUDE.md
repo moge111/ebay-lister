@@ -4,6 +4,8 @@ Flask JSON API + single-page UI (Preact + htm, vendored in `static/vendor/`, no 
 
 ## Setting it up for a user
 
+Moving an existing install to an always-on Mac (launchd service, data bundle): see `docs/MAC_MINI.md`.
+
 1. Python 3.10+. `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
 2. `python3 app.py` (port 8090 is set in `config.PORT`; change it if taken). The DB (`products.db`) and folders are created on first run.
 3. Walk the user through **Settings** in the UI. Everything lands in `settings.json` (gitignored, holds secrets; never commit or print it):

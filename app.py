@@ -589,4 +589,4 @@ def api_ebay_policies():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=config.PORT, debug=False, threaded=True)
+    app.run(host=config.HOST, port=config.PORT, debug=False, threaded=True)

@@ -5,6 +5,9 @@ PHOTOS_DIR = os.path.join(BASE_DIR, "photos")
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 PORT = 8090  # 8080 is often held by mitmdump
+# 127.0.0.1 = this machine only. Set LISTER_HOST=0.0.0.0 to reach it from other
+# devices on the network (no login screen — only do that on a trusted network).
+HOST = os.environ.get("LISTER_HOST", "127.0.0.1")
 
 # Folders the /photos route may serve from (never BASE_DIR itself — it holds
 # products.db, settings.json and Google credentials).

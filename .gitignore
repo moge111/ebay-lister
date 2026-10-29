@@ -23,3 +23,7 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+
+# Service logs (Mac mini launchd agent)
+logs/
+*.tar
