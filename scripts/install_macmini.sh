@@ -42,7 +42,8 @@ if [ -n "$BUNDLE" ]; then
   tar -xf "$BUNDLE" -C "$REPO"
   if [ -d _home/claude-memory ]; then
     mem="$HOME/.claude/projects/$(printf '%s' "$REPO" | sed 's/[^A-Za-z0-9]/-/g')/memory"
-    mkdir -p "$mem" && cp -Rn _home/claude-memory/. "$mem/"
+    # Keep any memory files already on this Mac (macOS `cp -n` exits 1 when it skips one).
+    mkdir -p "$mem" && rsync -a --ignore-existing _home/claude-memory/ "$mem/"
     echo "Claude memory -> $mem"
   fi
   if [ -f _home/.ebay_mobile_auth.json ] && [ ! -f "$HOME/.ebay_mobile_auth.json" ]; then
